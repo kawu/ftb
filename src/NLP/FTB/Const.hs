@@ -92,7 +92,9 @@ printFTB path = do
     showNode = T.unpack . syn
     showLeaf (Left x) = showWord x
     showLeaf (Right x) = showMWE x
-    showMWE  = intercalate ", " . map showWord . mweBody
+    showMWE mwe
+        = T.unpack (syn $ mweSyn mwe) ++ ": "
+        ++ intercalate ", " (map showWord $ mweBody mwe)
     showWord w = T.unpack $ T.concat
                  [ syn (pos w), " \""
                  , orth w, "\"" ]
