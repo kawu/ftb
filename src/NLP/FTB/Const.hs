@@ -10,19 +10,19 @@
 module NLP.FTB.Const where
 
 
-import           Control.Applicative ((<*), (*>), (<|>), (<$>),
-                    (<$))
-import           Control.Monad (guard)
+import           Control.Applicative       ((*>), (<$), (<$>), (<*), (<|>))
+import           Control.Monad             (forM_, guard)
 
 -- import qualified Data.Tree as R
-import qualified Data.Char as C
-import           Data.Maybe (catMaybes)
-import qualified Data.Map as M
-import qualified Data.Either as E
-import qualified Data.Text as T
-import qualified Data.Text.Lazy as L
-import qualified Data.Text.Lazy.IO as L
 import qualified Data.Attoparsec.Text.Lazy as A
+import qualified Data.Char                 as C
+import qualified Data.Either               as E
+import           Data.List                 (intercalate)
+import qualified Data.Map                  as M
+import           Data.Maybe                (catMaybes)
+import qualified Data.Text                 as T
+import qualified Data.Text.Lazy            as L
+import qualified Data.Text.Lazy.IO         as L
 -- import qualified Pipes as P
 
 
@@ -52,9 +52,9 @@ data Sym
 -- POS-FCT##FEAT1=VAL1|FEAT2=VAL2|...##.
 data Word
   = Word
-    { pos :: Sym
+    { pos  :: Sym
       -- ^ Part-of-speech tag
-    , avm :: AVM
+    , avm  :: AVM
       -- ^ Attribute-value matrix with morphological features
     , orth :: Text
       -- ^ Orthographic value
@@ -64,7 +64,7 @@ data Word
 -- | Multi-word expression.
 data MWE
   = MWE
-    { mweSyn :: Sym
+    { mweSyn  :: Sym
       -- ^ Syntagmatic symbol of MWE
     , mweBody :: [Word]
       -- ^ Elements of MWE
@@ -80,6 +80,22 @@ type FTree = Tree Sym (Either Word MWE)
 -- readFile :: FilePath -> P.Producer FTree IO ()
 readFTB :: FilePath -> IO [FTree]
 readFTB path = parseFTB <$> L.readFile path
+
+
+-- | A utility function for printing out on stdout the FTB corpus.
+printFTB :: FilePath -> IO ()
+printFTB path = do
+  ts <- readFTB path
+  forM_ ts $
+    putStrLn . showTree showNode showLeaf
+  where
+    showNode = T.unpack . syn
+    showLeaf (Left x) = showWord x
+    showLeaf (Right x) = showMWE x
+    showMWE  = intercalate ", " . map showWord . mweBody
+    showWord w = T.unpack $ T.concat
+                 [ syn (pos w), " \""
+                 , orth w, "\"" ]
 
 
 -- | Parse an FTB file contents with a list of syntactic trees,
